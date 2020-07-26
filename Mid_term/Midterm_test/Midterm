@@ -1,0 +1,856 @@
+################ Homework 2: Linear regression and gradient descent ########################"
+
+import numpy as np
+
+import pandas as pd
+df = pd.read_csv('mpg.csv')
+
+
+df=df.drop('name', axis=1)
+
+
+df = df.replace('?', np.nan)
+df = df.dropna()
+
+df['origin'].unique()
+
+df['origin'] = df['origin'].replace({1: 'america', 2: 'europe', 3: 'asia'})
+df = pd.get_dummies(df, columns=['origin'])
+X = df.drop('mpg', axis=1)
+y = df[['mpg']]
+
+from sklearn.model_selection import train_test_split
+
+# Split X and y on training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=1)
+
+
+from sklearn.linear_model import LinearRegression
+
+regression_model = LinearRegression()
+# feed the linear regression with the train data to obtain a model.
+regression_model.fit(X_train, y_train)
+
+
+coefficients = []
+# add beta0
+coefficients.append(regression_model.intercept_[0]) 
+equation = 'Y = ' + str(round(coefficients[0],2))
+for i in range(X_train.shape[1]):
+    coefficients.append(regression_model.coef_[0][i])
+    equation += ' + ' + str(round(regression_model.coef_[0][i],2))+'X'+str(i+1)
+    
+# print result equation
+print(equation)
+
+
+regression_model.score(X_test, y_test)
+
+
+from sklearn.metrics import mean_squared_error
+import math
+
+y_predict = regression_model.predict(X_test)
+regression_model_mse = mean_squared_error(y_predict, y_test)
+
+print(math.sqrt(regression_model_mse))
+
+regression_model.predict([[4, 121, 110, 2800, 15.4, 81, 0, 1, 0]])
+
+import matplotlib.pyplot as plt
+
+projected_column = 'displacement'
+max_x = np.int64(X_train[projected_column].max())
+min_x = np.int64(X_train[projected_column].min())
+x = list(X_train[projected_column])
+y = list(y_train['mpg'])
+m = coefficients[df.columns.get_loc(projected_column)+1]
+b = coefficients[0]
+# now we are going to plot the points and the model obtained
+plt.scatter(x, y, color='blue')  # you can use test_data_X and test_data_Y instead.
+plt.plot([min_x, max_x], [m*min_x + b, m*max_x + b], 'r')
+plt.title('Fitted linear regression', fontsize=16)
+plt.xlabel('x', fontsize=13)
+plt.ylabel('y', fontsize=13)
+
+
+# Gradient Descent:
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+def generate_data(b1, b0, size, x_range = (-10, 10), noise_mean = 0, noise_std = 1):
+    """
+	input:
+	b1, b0 - true parameters of data
+	size - size of data, numbers of samples
+    x_range - tuple of (min, max) x-values
+    noise_mean - noise mean value
+    noise_std - noise standard deviation
+	
+	output:
+	data_x, data_y - data features
+	"""
+    noise = np.random.normal(noise_mean, noise_std, size)
+    # rnd_vals = np.random.rand(size)
+    # data_x = np.random.choice(x_range[1]-x_range[0], size)
+    data_x = np.linspace(start=x_range[0], stop=x_range[1], num=size)
+    data_y = b1 * data_x + b0 + noise
+	
+    return data_x, data_y
+
+
+
+
+
+def predict(x, y):
+	"""
+	input:
+	x, y - data features
+	
+	output:
+	b1, b0 - predicted parameters of data
+	"""
+	mean_x = x.mean()
+	mean_y = y.mean()
+
+	b1 = np.dot(y - mean_y, x - mean_x) / np.dot(x - mean_x, x - mean_x)
+	b0 = mean_y - b1*mean_x
+
+	return b1, b0
+
+
+def animate(data_x, data_y, true_b1, true_b0, b1, b0, x_range = (-10,10), label="Least squares"):
+	plt.scatter(data_x, data_y)
+	plt.plot([x_range[0], x_range[1]], 
+           [x_range[0]*true_b1 + true_b0, x_range[1]*true_b1 + true_b0], 
+           c="r", linewidth=2, label="True")
+	plt.plot([x_range[0], x_range[1]], 
+           [x_range[0]*b1 + b0, x_range[1]*b1 + b0], 
+           c="g", linewidth=2, label=label)
+	plt.legend()
+	plt.show()
+
+
+
+def gradient(x, y, alpha):
+    
+    w=np.array([-1.0,1.0])
+    N=len(x)
+    iteration=1
+    
+    #new_w=np.array([1.0,1.0])
+    #b1, b0 = 1, -1
+    #error=1
+    while iteration<1000:    
+        #delta= -y + (b1*x + b0)
+        delta= -y + (w[1]*x + w[0])
+
+        db0 = 2*np.sum(delta)/N
+        db1 = 2*np.dot(delta,x)/N
+        
+        #b1=b1 - alpha*db1
+        #b0=b0 - alpha*db0
+        w[1] = w[1] - alpha*db1
+        w[0] = w[0] - alpha*db0
+            
+        #error=np.sum(abs(new_w - w))
+        #w=new_w
+        iteration+=1
+        
+    return w
+
+
+
+
+def gradient_descent(x, y, lr=1e-2, N=1000):
+	# b1, b0 = np.random.random(size=2)
+	b1, b0 = 1, -1
+
+	iteration = 0
+	while iteration < N:
+		delta = b1 * x + b0 - y
+		db0 = 2 * np.sum(delta) / N
+		db1 = 2 * np.dot(delta, x) / N
+
+		b1 = b1 - lr * db1
+		b0 = b0 - lr * db0
+		iteration += 1
+
+	return b1, b0
+
+
+
+
+
+# coding: utf-8
+
+################################# Homework 3####################################
+
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+from sklearn.linear_model import LogisticRegression
+from sklearn import datasets
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
+
+### 1 GENERATE DATA
+iris = datasets.load_iris()
+
+
+X = iris.data
+y = iris.target
+
+X_train, X_test, y_train, y_test= train_test_split(X, y, test_size=0.2)
+
+X_train.shape
+
+
+model=LogisticRegression()
+model.fit(X_train, y_train)
+
+y_pred= model.predict(X_test)
+
+accuracy=accuracy_score(y_pred, y_test)
+print(accuracy)
+
+
+# HomeTask1: Finalizing Gradient Descent for Logistic Regression
+
+def sigmoid(z):
+    return np.exp(z)/(1+ np.exp(z)) 
+
+
+def gradient_LR(x, y, alpha):
+
+    w=np.array([-1.0,1.0])
+    N=len(x)
+    iteration=1
+    
+    while iteration<1000:    
+        z= w[0] + w[1]*x
+        delta= sigmoid(z) - y
+        
+        db0 = np.sum(delta)/N
+        db1 = np.dot(x.T,delta)/N
+        
+        w[1] = w[1] - alpha*db1
+        w[0] = w[0] - alpha*db0
+
+        iteration+=1
+        
+    return w
+
+
+
+X= np.array([iris.data[i,:1] for i in range(len(iris.data)) if iris.target[i]!=2])
+y= np.array([iris.target[i] for i in range(len(iris.data)) if iris.target[i]!=2])
+
+
+from numpy import reshape
+y=y.reshape((y.shape[0], 1))
+
+
+X_train, X_test, y_train, y_test= train_test_split(X, y, test_size=0.2, random_state=1)
+
+
+b0, b1= gradient_LR(X_train, y_train, 0.01)
+print(b0, b1)
+
+
+y_pred=[int(sigmoid(b0+ b1*x)>0.5) for x in X_test]
+y_pred
+
+plt.scatter(X_test,y_test)
+plt.scatter(X_test, y_pred)
+plt.show
+
+accuracy=accuracy_score(y_pred, y_test)
+print(accuracy)
+
+
+# HOMEWORK N°3
+
+
+import pandas as pd
+df = pd.read_csv('ks-projects-201801.csv')
+
+
+
+df=df[df[df.columns[9]]!='canceled']
+
+df=pd.DataFrame(df)
+
+#y=df.iloc[:,9:10]
+y= df[df.columns[9]]
+#y = df.loc[:,['state']]
+
+
+#X = df.drop(df.columns[9], axis=1)
+#X= df[df.columns[10]]
+#X=df['pledged']
+X = df.loc[:,['backers']]
+
+X_train, X_test, y_train, y_test= train_test_split(X, y, test_size=0.2)
+
+
+y_test.reset_index(drop=True, inplace=True)
+
+
+model=LogisticRegression()
+
+
+model.fit(X_train, y_train)
+
+y_predict=model.predict(X_test)
+
+
+from sklearn.metrics import precision_score
+
+print("Precision = ",precision_score(y_test.values, y_predict, average = None))
+print("Recall = ", recall_score(y_test.values, y_predict, average=None))
+
+
+TP=0
+FP=0
+FN=0
+for i in range(len(y_test)):
+    if y_predict[i]=='successful':
+        if y_predict[i]==y_test[i]:
+            TP+=1
+        else:
+            FP+=1
+    else:
+        if y_predict[i]!=y_test[i]:
+            FN+=1
+
+precision = TP/(TP + FP)
+recall = TP/(TP + FN)
+
+print(recall)
+print(precision)
+
+
+
+# coding: utf-8
+################################### Homework 4###################################
+
+import numpy as np
+import pandas as pd
+import random 
+import matplotlib.pyplot as plt
+get_ipython().run_line_magic('matplotlib', 'inline')
+from matplotlib.pylab import rcParams
+rcParams['figure.figsize']=12, 10
+
+x=np.array([i*np.pi/180 for i in range(60,300,4)])
+np.random.seed(10)
+y=np.sin(x) + np.random.normal(0, 0.15, len(x))
+data= pd.DataFrame(np.column_stack([x,y]), columns=['x', 'y'])
+plt.plot(data['x'], data['y'], '.')
+
+
+# In[15]:
+
+
+for i in range (2,16):
+    colname='x_%d'%i
+    data[colname]=data['x']**i
+
+
+from sklearn.linear_model import LinearRegression
+def linear_regression(data, power, models_to_plot):
+    predictors=['x']
+    if power >=2:
+        predictors.extend(['x_%d'%i for i in range(2, power+1)])
+        
+    linreg= LinearRegression(normalize=True)
+    linreg.fit(data[predictors], data['y'])
+    y_pred= linreg.predict(data[predictors])
+    
+    if power in models_to_plot:
+        plt.subplot(models_to_plot[power])
+        plt.tight_layout()
+        plt.plot(data['x'], y_pred)
+        plt.plot(data['x'], data['y'], '.')
+        plt.title('plot for power: %d'%power)
+
+
+
+models_to_plot={1:231, 3:232, 6:233, 9:234, 12:235, 15:236}
+for i in range(1,16):
+    linear_regression(data, power=i, models_to_plot=models_to_plot)
+
+
+# In[22]:
+
+
+from sklearn.linear_model import Ridge
+def ridge_regression(data, predictors, alpha, models_to_plot={}):
+
+    ridgereg= Ridge(alpha=alpha, normalize=True)
+    ridgereg.fit(data[predictors], data['y'])
+    y_pred= ridgereg.predict(data[predictors])
+    
+    if alpha in models_to_plot:
+        plt.subplot(models_to_plot[alpha])
+        plt.tight_layout()
+        plt.plot(data['x'], y_pred)
+        plt.plot(data['x'], data['y'], '.')
+        plt.title('plot for alpha: %.3g'%alpha)
+
+
+# In[23]:
+
+
+predictors=['x']
+predictors.extend(['x_%d'%i for i in range(2, 16)])
+alpha_ridge=[1e-15, 1e-10, 1e-8, 1e-4, 1e-3, 1e-2, 1, 5, 10, 20]
+models_to_plot={1e-15:231, 1e-10:232, 1e-4:233, 1e-3:234, 1e-2:235, 5:236}
+for i in range(10):
+    ridge_regression(data, predictors, alpha_ridge[i], models_to_plot)
+
+
+# In[24]:
+
+
+from sklearn.linear_model import Lasso
+def lasso_regression(data, predictors, alpha, models_to_plot={}):
+
+    lassoreg= Lasso(alpha=alpha, normalize=True, max_iter= 1e5)
+    lassoreg.fit(data[predictors], data['y'])
+    y_pred= lassoreg.predict(data[predictors])
+    
+    if alpha in models_to_plot:
+        plt.subplot(models_to_plot[alpha])
+        plt.tight_layout()
+        plt.plot(data['x'], y_pred)
+        plt.plot(data['x'], data['y'], '.')
+        plt.title('plot for alpha: %.3g'%alpha)
+
+
+# In[25]:
+
+
+predictors=['x']
+predictors.extend(['x_%d'%i for i in range(2, 16)])
+alpha_lasso=[1e-15, 1e-10, 1e-8,1e-5, 1e-4, 1e-3, 1e-2, 1, 5, 10]
+models_to_plot={1e-10:231, 1e-5:232, 1e-4:233, 1e-3:234, 1e-2:235, 1:236}
+for i in range(10):
+    lasso_regression(data, predictors, alpha_lasso[i], models_to_plot)
+
+
+# In[78]:
+
+
+from sklearn.preprocessing import scale
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LassoCV, Lasso, Ridge, RidgeCV
+from sklearn.metrics import mean_squared_error
+
+
+# In[48]:
+
+
+df=pd.read_csv('Hitters.csv').dropna().drop('Player', axis=1)
+dummies=pd.get_dummies(df[['League', 'Division', 'NewLeague']])
+
+
+# In[67]:
+
+
+y=df.Salary
+X_=df.drop(['Salary', 'League', 'Division', 'NewLeague'], axis=1).astype('float64')
+X=pd.concat([X_, dummies[['League_N', 'Division_W', 'NewLeague_N']]], axis=1)
+
+
+# In[81]:
+
+
+alphas= 10**np.linspace(10, -2, 100)*0.5
+ridge=Ridge(normalize=True)
+coefs=[]
+for a in alphas:
+    ridge.set_params(alpha=a)
+    ridge.fit(X, y)
+    coefs.append(ridge.coef_)
+np.shape(coefs)
+
+
+
+from sklearn.model_selection import train_test_split
+X_train, X_test, y_train, y_test= train_test_split(X, y, test_size=0.3)
+
+
+# KNN CLASSIFICATION
+
+# In[2]:
+
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+
+# In[90]:
+
+
+url="http://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data"
+
+
+# In[91]:
+
+
+names=['sepal-length', 'sepal-width', 'petal-length', 'petal-width', 'Class']
+
+
+# In[92]:
+
+
+dataset = pd.read_csv(url, names=names)
+
+
+# In[93]:
+
+
+dataset
+
+
+# In[124]:
+
+
+X=dataset.iloc[:, :-1].values
+y=dataset.iloc[:, 4].values
+
+
+# In[135]:
+
+
+from sklearn.model_selection import train_test_split
+X_train, X_test, y_train, y_test= train_test_split(X, y, test_size=0.3)
+
+
+# In[137]:
+
+
+from sklearn.preprocessing import StandardScaler
+scaler = StandardScaler()
+scaler.fit(X_train)
+X_train = scaler.transform(X_train)
+X_test = scaler.transform(X_test)
+
+
+# In[138]:
+
+
+X_train.astype('float64')
+
+
+# In[139]:
+
+
+from sklearn.neighbors import KNeighborsClassifier
+classifier = KNeighborsClassifier(algorithm= 'auto', leaf_size=30, metric='minkowski', n_jobs=1, n_neighbors=5, p=2, weights='uniform')
+classifier.fit(X_train, y_train)
+
+
+# In[140]:
+
+
+y_pred=classifier.predict(X_test)
+
+
+# In[145]:
+
+
+from sklearn.metrics import classification_report, confusion_matrix
+print(confusion_matrix(y_test, y_pred))
+print(classification_report(y_test, y_pred))
+
+
+# In[154]:
+
+
+error=[]
+for i in range(1,40):
+    knn=KNeighborsClassifier(algorithm= 'auto', leaf_size=30, metric='minkowski', n_jobs=1, n_neighbors=i, p=2, weights='uniform')
+    knn.fit(X_train, y_train)
+    pred_i=knn.predict(X_test)
+    error.append(np.mean(pred_i!=y_test))
+
+
+# In[155]:
+
+
+plt.figure(figsize=(12, 6))
+plt.plot(range(1,40), error, color='red', linestyle='dashed', marker='o', markerfacecolor='blue', markersize=10)
+plt.title('Error rate k value')
+plt.xlabel('Kvalue')
+plt.ylabel('Mean error')
+
+
+# HOMEWORK 4: 
+
+# In[8]:
+
+
+df=pd.read_csv('winequality-red.csv', sep=';')
+
+
+# In[9]:
+
+
+df
+
+
+# In[16]:
+
+
+X=df.iloc[:, :-1].values
+y=df.iloc[:, 11].values
+
+
+# In[18]:
+
+
+from sklearn.model_selection import train_test_split
+X_train, X_test, y_train, y_test= train_test_split(X, y, test_size=0.3)
+
+
+# In[19]:
+
+
+from sklearn.preprocessing import StandardScaler
+scaler = StandardScaler()
+scaler.fit(X_train)
+X_train = scaler.transform(X_train)
+X_test = scaler.transform(X_test)
+
+
+# In[21]:
+
+
+from sklearn.neighbors import KNeighborsClassifier
+classifier = KNeighborsClassifier(algorithm= 'auto', leaf_size=30, metric='minkowski', n_jobs=1, n_neighbors=5, p=2, weights='uniform')
+classifier.fit(X_train, y_train)
+
+
+# In[22]:
+
+
+y_pred=classifier.predict(X_test)
+
+
+# In[24]:
+
+
+from sklearn.metrics import classification_report, confusion_matrix
+print(confusion_matrix(y_test, y_pred))
+print(classification_report(y_test, y_pred))
+
+
+# In[25]:
+
+
+error=[]
+for i in range(1,40):
+    knn=KNeighborsClassifier(algorithm= 'auto', leaf_size=30, metric='minkowski', n_jobs=1, n_neighbors=i, p=2, weights='uniform')
+    knn.fit(X_train, y_train)
+    pred_i=knn.predict(X_test)
+    error.append(np.mean(pred_i!=y_test))
+
+
+# In[26]:
+
+
+plt.figure(figsize=(12, 6))
+plt.plot(range(1,40), error, color='red', linestyle='dashed', marker='o', markerfacecolor='blue', markersize=10)
+plt.title('Error rate k value')
+plt.xlabel('Kvalue')
+plt.ylabel('Mean error')
+
+
+# In[28]:
+
+
+error=[]
+for i in range(1,40):
+    knn=KNeighborsClassifier(algorithm= 'auto', leaf_size=30, metric='manhattan', n_jobs=1, n_neighbors=i, weights='uniform')
+    knn.fit(X_train, y_train)
+    pred_i=knn.predict(X_test)
+    error.append(np.mean(pred_i!=y_test))
+    
+plt.figure(figsize=(12, 6))
+plt.plot(range(1,40), error, color='red', linestyle='dashed', marker='o', markerfacecolor='blue', markersize=10)
+plt.title('Error rate k value')
+plt.xlabel('Kvalue')
+plt.ylabel('Mean error')
+
+
+# In[30]:
+
+
+error=[]
+for i in range(1,40):
+    knn=KNeighborsClassifier(algorithm= 'auto', leaf_size=30, metric='chebyshev', n_jobs=1, n_neighbors=i, weights='uniform')
+    knn.fit(X_train, y_train)
+    pred_i=knn.predict(X_test)
+    error.append(np.mean(pred_i!=y_test))
+    
+plt.figure(figsize=(12, 6))
+plt.plot(range(1,40), error, color='red', linestyle='dashed', marker='o', markerfacecolor='blue', markersize=10)
+plt.title('Error rate k value')
+plt.xlabel('Kvalue')
+plt.ylabel('Mean error')
+
+
+# In[40]:
+
+
+from sklearn.preprocessing import scale
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LassoCV, Lasso, Ridge, RidgeCV
+from sklearn.metrics import mean_squared_error
+
+
+# In[35]:
+
+
+alphas= 10**np.linspace(10, -2, 100)*0.5
+ridgeCV=RidgeCV(alphas=alphas, scoring='neg_mean_squared_error', normalize=True)
+ridgeCV.fit(X_train, y_train)
+ridgeCV.alpha_
+
+
+# In[49]:
+
+
+alphas= 10**np.linspace(10, -2, 100)*0.5
+ridge=Ridge(alpha=ridgeCV.alpha_, normalize=True)
+ridge.fit(X_train, y_train)
+mean_squared_error(y_test, ridge.predict(X_test))
+
+
+# In[50]:
+
+
+#ridge.fit(X, y)
+pd.Series(ridge.coef_, index=df.columns[:-1])
+
+
+# In[51]:
+
+
+alphas= 10**np.linspace(10, -2, 100)*0.5
+lassoCV=LassoCV(alphas=alphas, cv=10,  max_iter=10000, normalize=True)
+lassoCV.fit(X_train, y_train)
+
+lasso=Lasso( max_iter=10000, normalize=True)
+lasso.set_params(alpha=lassoCV.alpha_)
+lasso.fit(X_train, y_train)
+mean_squared_error(y_test, lasso.predict(X_test))
+
+pd.Series(lasso.coef_, index=df.columns[:-1])
+
+
+
+
+
+
+############################################"Homework 5##############################"
+import numpy as np
+import matplotlib.pyplot as plt
+
+from sklearn import decomposition
+from sklearn import datasets
+from numpy import linalg as LA
+from sklearn.decomposition import PCA
+
+
+### 1 GENERATE DATA
+iris = datasets.load_iris()
+### Pay attention that "X" is a (150, 4) shape matrix
+### y is a (150,) shape array
+X = iris.data
+y = iris.target
+
+
+### 2 CENTER DATA
+X_centered = X- X.mean(0) 
+X_centered = X_centered.T
+
+### 3 PROJECT DATA
+### at first you need to get covariance matrix
+### Pay attention that cov_mat should be a (4, 4) shape matrix
+cov_mat = np.cov(X_centered)
+### next step you need to find eigenvalues and eigenvectors of covariance matrix
+eig_values, eig_vectors = LA.eig(cov_mat)
+### find out which eigenvectors you should choose based on eigenvalues
+# we take the eigenvectors corresponding to the greatest eigenvalues 
+index_1 = 0
+index_2 = 1
+print(f"this is our 2D subspace:\n {eig_vectors[:, [index_1,index_2]]}")
+### now we can project our data to this 2D subspace
+### project original data on chosen eigenvectors
+
+feature_vectors = eig_vectors[:, [index_1,index_2]]
+projected_data = np.dot(feature_vectors.T, X_centered)
+
+
+### now you are able to visualize projected data
+### you should get excactly the same picture as in the last lab slide
+fig = plt.figure() 
+plt.scatter(projected_data[0, :], projected_data[0, :], label='data projected')
+plt.xlabel("First principal component")
+plt.ylabel("Second principal component")
+plt.legend()
+plt.title('Dataset after PCA')
+
+plt.plot(projected_data.T[y == 0, 0], projected_data.T[y == 0, 1], 'bo', label='Setosa')
+plt.plot(projected_data.T[y == 1, 0], projected_data.T[y == 1, 1], 'go', label='Versicolour')
+plt.plot(projected_data.T[y == 2, 0], projected_data.T[y == 2, 1], 'ro', label='Virginica')
+plt.legend(loc=0)
+plt.show()
+
+##Now let's do the projection but with a diffent eigen vector corresponding to the negetive of it's eigen value
+We choose the second eigen vector:
+feature_vectors[:, 1]= -feature_vectors[:,1]
+ 
+plt.plot(projected_data.T[y == 0, 0], projected_data.T[y == 0, 1], 'bo', label='Setosa')
+plt.plot(projected_data.T[y == 1, 0], projected_data.T[y == 1, 1], 'go', label='Versicolour')
+plt.plot(projected_data.T[y == 2, 0], projected_data.T[y == 2, 1], 'ro', label='Virginica')
+plt.legend(loc=0)
+plt.show()
+### 4 RESTORE DATA
+### we have a "projected_data" which shape is (2,150)
+### and we have a 2D subspace "eig_vectors[:, [index_1, index_2]]" which shape is (4,2)
+### how to recieve a restored data with shape (4,150)?
+restored_data = np.dot(feature_vectors, projected_data)
+
+############################################
+### CONGRATS YOU ARE DONE WITH THE FIRST PART ###
+############################################
+
+### 1 GENERATE DATA
+### already done
+
+### 2 CENTER DATA
+### already done
+
+### 3 PROJECT DATA
+### "n_components" show how many dimensions should we project our data on 
+pca = decomposition.PCA(n_components=2)
+### class method "fit" for our centered data
+pca.fit(X_centered.T)
+### make a projection
+X_pca = pca.transform(X_centered.T)
+### now we can plot our data and compare with what should we get
+plt.plot(X_pca[y == 0, 0], X_pca[y == 0, 1], 'bo', label='Setosa')
+plt.plot(X_pca[y == 1, 0], X_pca[y == 1, 1], 'go', label='Versicolour')
+plt.plot(X_pca[y == 2, 0], X_pca[y == 2, 1], 'ro', label='Virginica')
+plt.legend(loc=0)
+plt.show()
+
+#We can see that the graph is similar to the plot corresponding to the second part of our projection (with negative eigen value)
